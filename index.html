@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PasteDrive">
+<meta name="theme-color" content="#0a0a0a" id="metaTheme">
+<title>PasteDrive</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a; --surface: #141414; --surface-raised: #1c1c1c;
+    --border: #2a2a2a; --text: #e8e8e8; --text-dim: #aaa; --text-muted: #888;
+    --accent: #c8ff00; --accent-dim: #a0cc00; --danger: #ff4444;
+    --radius: 14px;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  [data-theme="light"] {
+    --bg: #f2f2f2; --surface: #ffffff; --surface-raised: #e8e8e8;
+    --border: #d0d0d0; --text: #1a1a1a; --text-dim: #555; --text-muted: #888;
+    --accent: #5a8a00; --accent-dim: #4a7200; --danger: #cc2222;
+  }
+
+  html, body {
+    height: 100%; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-weight: 300; -webkit-tap-highlight-color: transparent; overflow-x: hidden;
+  }
+
+  body { padding-top: var(--safe-top); padding-bottom: var(--safe-bottom); min-height: 100dvh; }
+
+  .header {
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px 20px 12px; position: sticky; top: 0; z-index: 10; background: var(--bg);
+  }
+
+  .logo {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: 18px; font-weight: 500; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .logo span { color: var(--accent); }
+  .logo svg rect:first-child { fill: var(--bg); }
+
+  .main { padding: 8px 20px 40px; }
+
+  .section-label {
+    font-size: 11px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 10px; margin-top: 24px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .plates-grid { display: flex; flex-direction: column; gap: 10px; }
+
+  .plate-row {
+    display: flex; gap: 6px; align-items: stretch;
+  }
+
+  .plate-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; cursor: pointer; transition: all 0.15s;
+    -webkit-user-select: none; user-select: none; flex: 1; min-width: 0;
+  }
+  .plate-card:active { transform: scale(0.98); border-color: var(--accent); }
+
+  .plate-card .label {
+    font-size: 12px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px;
+  }
+  .plate-card .number {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: clamp(22px, 7vw, 32px); font-weight: 500; letter-spacing: 4px;
+    color: var(--text); line-height: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;
+  }
+  .plate-card .tap-hint {
+    font-size: 12px; color: var(--text-dim); margin-top: 10px;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+  }
+
+  .plate-actions {
+    display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+  }
+  .plate-action-btn {
+    width: 40px; flex: 1; min-height: 36px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.1s;
+  }
+  .plate-action-btn:active { background: var(--surface-raised); }
+  .plate-action-btn.hidden { display: none; }
+  .plate-action-btn svg { width: 16px; height: 16px; }
+
+  .locations-grid { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .loc-row {
+    display: flex; gap: 6px; align-items: stretch; flex: 1; min-width: 120px;
+  }
+
+  .loc-card {
+    background: var(--surface); border: 2px solid var(--border); border-radius: 12px;
+    padding: 12px 16px; cursor: pointer; transition: all 0.15s;
+    -webkit-user-select: none; user-select: none;
+    flex: 1; min-width: 0;
+  }
+  .loc-card:active { transform: scale(0.97); }
+  .loc-card.selected { border-color: var(--accent); }
+  .loc-card .loc-label { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+  .loc-card .loc-domain {
+    font-size: 11px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .loc-card.selected .loc-label { color: var(--accent); }
+
+  .loc-edit-btn {
+    width: 40px; flex-shrink: 0; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-muted); display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .loc-edit-btn:active { background: var(--surface-raised); }
+  .loc-edit-btn svg { width: 16px; height: 16px; }
+
+  .add-loc-btn {
+    background: var(--surface); border: 1px dashed var(--border); border-radius: 12px;
+    padding: 12px 16px; cursor: pointer; color: var(--text-muted); font-size: 13px;
+    display: flex; align-items: center; gap: 6px; transition: all 0.15s;
+    flex: 0; min-width: 44px; justify-content: center;
+  }
+  .add-loc-btn:active { transform: scale(0.97); background: var(--surface-raised); }
+  .add-loc-btn svg { width: 18px; height: 18px; }
+
+  .empty-state { text-align: center; padding: 40px 20px; }
+  .empty-icon {
+    width: 64px; height: 64px; border-radius: 20px; background: var(--surface);
+    border: 1px dashed var(--border); display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px; color: var(--text-muted);
+  }
+  .empty-icon svg { width: 28px; height: 28px; }
+  .empty-state h2 { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; color: var(--text-dim); margin-bottom: 24px; line-height: 1.5; }
+
+  .btn-primary {
+    background: var(--accent); color: var(--bg); border: none; border-radius: 12px;
+    padding: 14px 28px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-primary:active { transform: scale(0.96); background: var(--accent-dim); }
+
+  .btn-secondary {
+    background: var(--surface); color: var(--text); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 28px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-secondary:active { transform: scale(0.96); background: var(--surface-raised); }
+
+  .btn-danger {
+    background: transparent; color: var(--danger); border: 1px solid var(--danger);
+    border-radius: 12px; padding: 14px 28px; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 15px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-danger:active { transform: scale(0.96); background: rgba(255,68,68,0.1); }
+
+  .fab {
+    position: fixed; bottom: calc(24px + var(--safe-bottom)); right: 20px;
+    width: 56px; height: 56px; border-radius: 16px; background: var(--accent);
+    color: var(--bg); border: none; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.15s; z-index: 20;
+  }
+  .fab:active { transform: scale(0.9); }
+  .fab svg { width: 24px; height: 24px; }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  .sheet {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface);
+    border-radius: 20px 20px 0 0; z-index: 101; transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 90dvh; overflow-y: auto; padding: 8px 20px calc(24px + var(--safe-bottom));
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 8px auto 20px; }
+  .sheet h3 { font-size: 18px; font-weight: 500; margin-bottom: 20px; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block; font-size: 12px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); margin-bottom: 8px;
+  }
+  .field input {
+    width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; color: var(--text);
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: 16px; outline: none; transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .field input::placeholder { color: var(--text-muted); }
+  .field .hint { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+
+  .sheet-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .sheet-actions button { flex: 1; }
+
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .toggle-row .toggle-label { font-size: 14px; color: var(--text); }
+  .toggle-switch {
+    width: 52px; height: 30px; border-radius: 15px; background: var(--border);
+    border: none; cursor: pointer; position: relative; transition: background 0.2s;
+    flex-shrink: 0; margin-left: 12px;
+  }
+  .toggle-switch::after {
+    content: ''; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px;
+    border-radius: 12px; background: var(--text); transition: transform 0.2s;
+  }
+  .toggle-switch.on { background: var(--accent); }
+  .toggle-switch.on::after { transform: translateX(22px); background: var(--bg); }
+
+  .settings-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 18px; margin-bottom: 8px;
+  }
+
+  /* Launch overlay */
+  .launch-overlay {
+    position: fixed; inset: 0; z-index: 250; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    animation: launchFadeIn 0.25s ease;
+  }
+  .launch-overlay.hidden { display: none; }
+  .launch-content { text-align: center; padding: 40px 24px; width: 100%; max-width: 360px; }
+  .launch-plate {
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: clamp(28px, 9vw, 40px); font-weight: 500; letter-spacing: 5px;
+    color: var(--text); margin-bottom: 40px;
+    animation: launchSlideUp 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .launch-steps { display: flex; flex-direction: column; gap: 20px; align-items: flex-start; margin: 0 auto; width: fit-content; }
+  .launch-step {
+    display: flex; align-items: center; gap: 14px; font-size: 17px;
+    color: var(--text); opacity: 0; animation: launchStepIn 0.4s ease forwards;
+  }
+  .launch-step:nth-child(1) { animation-delay: 0.15s; }
+  .launch-step:nth-child(2) { animation-delay: 0.5s; }
+  .launch-check { width: 24px; height: 24px; color: var(--accent); flex-shrink: 0; }
+  .launch-spinner {
+    width: 22px; height: 22px; border: 2.5px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; flex-shrink: 0;
+  }
+  .launch-dots::after { content: ''; animation: dots 1.5s steps(4, end) infinite; }
+  .launch-domain { margin-top: 32px; font-size: 14px; color: var(--text-dim); opacity: 0; animation: launchStepIn 0.4s ease 0.6s forwards; }
+
+  @keyframes launchFadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes launchSlideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes launchStepIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
+  .toast {
+    position: fixed; top: calc(var(--safe-top) + 8px); left: 20px; right: 20px;
+    padding: 16px 20px; background: var(--accent); color: var(--bg);
+    border-radius: 14px; font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    font-size: 13px; font-weight: 500; z-index: 200; transform: translateY(-120%);
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); text-align: center;
+  }
+  .toast.show { transform: translateY(0); }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  .footer {
+    padding: 24px 20px 40px; margin-top: 16px; border-top: 1px solid var(--border);
+    text-align: center; font-size: 13px; color: var(--text-muted); line-height: 1.8;
+  }
+  .footer a { color: var(--text-dim); text-decoration: none; }
+  .footer a:hover { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div style="text-align:center;">
+    <a href="https://timmolab.github.io/pastedrive" target="_blank" class="logo" style="text-decoration:none;"><svg style="width:28px;height:28px;vertical-align:-6px;margin-right:6px;" viewBox="0 0 512 512"><rect width="512" height="512" rx="96" fill="var(--bg)"/><rect x="156" y="80" width="200" height="352" rx="60" fill="none" stroke="var(--accent)" stroke-width="14"/><rect x="206" y="66" width="100" height="32" rx="16" fill="var(--accent)"/><rect x="128" y="140" width="28" height="60" rx="14" fill="var(--accent)"/><rect x="356" y="140" width="28" height="60" rx="14" fill="var(--accent)"/><rect x="128" y="312" width="28" height="60" rx="14" fill="var(--accent)"/><rect x="356" y="312" width="28" height="60" rx="14" fill="var(--accent)"/><rect x="196" y="200" width="120" height="10" rx="5" fill="var(--accent)" opacity="0.5"/><rect x="196" y="230" width="80" height="10" rx="5" fill="var(--accent)" opacity="0.5"/><rect x="216" y="392" width="80" height="14" rx="4" fill="var(--accent)"/></svg>Paste<span>Drive</span></a>
+    <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Never mistype your car plate again</div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- Locations -->
+  <div class="section-label">Parking location</div>
+  <div id="locationsContainer"></div>
+
+  <!-- Plates -->
+  <div class="section-label" style="margin-top:20px;">Your plates</div>
+  <div id="platesContainer"></div>
+
+  <!-- Disclaimer (right after plates) -->
+  <div style="margin-top:16px; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);">
+    <div style="display:flex; align-items:flex-start; gap:14px;">
+      <svg style="width:28px;height:28px;flex-shrink:0;margin-top:1px;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div style="font-size:14px; color:var(--text-dim); line-height:1.8;">
+        <strong style="color:var(--text); font-size:16px;">Disclaimer</strong><br>
+        PasteDrive is a personal convenience tool. It copies your plate number and opens a URL — it does <strong style="color:var(--text);">not</strong> register or confirm parking on your behalf.
+        <strong style="color:var(--text);">Always verify that your parking is successfully registered on the parking website.</strong>
+        PasteDrive is provided as-is with no warranty. The authors are not responsible for parking fines, failed registrations, or any other consequences of using this tool.
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section-label" style="margin-top:28px;">Settings</div>
+
+  <div class="settings-card">
+    <div class="toggle-row">
+      <div class="toggle-label">Dark theme</div>
+      <button class="toggle-switch" id="themeToggle" onclick="toggleTheme()"></button>
+    </div>
+  </div>
+
+  <div class="settings-card">
+    <div class="toggle-row">
+      <div class="toggle-label">Launch animation</div>
+      <button class="toggle-switch" id="animToggle" onclick="toggleAnim()"></button>
+    </div>
+    <div style="margin-top:4px; font-size:13px; color:var(--text-muted);">Visual feedback when copying and opening</div>
+  </div>
+
+  <button onclick="togglePanel('backup')" style="
+    display:flex; align-items:center; gap:10px; width:100%; padding:14px 18px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);
+    color:var(--text); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; text-align:left; margin-bottom:8px;
+  ">
+    <svg style="width:18px;height:18px;color:var(--accent);flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    <span style="flex:1;">Backup &amp; erase</span>
+    <svg id="backupChevron" style="width:16px;height:16px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="backupPanel" style="display:none; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:8px;">
+    <div style="display:flex; gap:10px;">
+      <button class="btn-secondary" style="flex:1;" onclick="exportConfig()">&#8595; Export</button>
+      <button class="btn-secondary" style="flex:1;" onclick="document.getElementById('importFile').click()">&#8593; Import</button>
+    </div>
+    <div style="margin-top:8px; font-size:13px; color:var(--text-muted);">Export saves a JSON file. Import restores from it.</div>
+    <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importConfig(event)">
+
+    <div style="border-top:1px solid var(--border); margin-top:18px; padding-top:18px;">
+      <div style="font-size:12px; font-family:ui-monospace,'SF Mono','Cascadia Mono','Consolas',monospace; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;">Erase</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn-danger" style="padding:12px 16px; font-size:14px;" id="eraseLocsBtn" onclick="confirmErase('locs')">Erase all locations</button>
+        <button class="btn-danger" style="padding:12px 16px; font-size:14px;" id="erasePlatesBtn" onclick="confirmErase('plates')">Erase all plates</button>
+        <button class="btn-danger" style="padding:12px 16px; font-size:14px;" id="eraseAllBtn" onclick="confirmErase('all')">Erase all data</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Info panels -->
+<div style="padding: 0 20px; display:flex; flex-direction:column; gap:8px;">
+  <button onclick="togglePanel('about')" style="
+    display:flex; align-items:center; gap:10px; width:100%; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; text-align:left;
+  ">
+    <svg style="width:18px;height:18px;color:var(--accent);flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+    <span style="flex:1;">What is PasteDrive?</span>
+    <svg id="aboutChevron" style="width:16px;height:16px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="aboutPanel" style="display:none; padding:16px 16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:10px;">
+    <div style="font-size:15px; color:var(--text-dim); line-height:1.8;">
+      <strong style="color:var(--text);">PasteDrive</strong> is a simple tool that saves your license plate numbers so you don't have to type them every time you register parking.<br><br>
+      Many parking websites and apps require you to enter your plate number manually. This means typing it on a small phone keyboard every morning — and risking typos that could lead to a parking fine.<br><br>
+      PasteDrive lets you:<br>
+      &#x2022; Save your plate numbers once<br>
+      &#x2022; Save your parking website URLs<br>
+      &#x2022; Tap a plate to copy it and open the parking site in one step<br>
+      &#x2022; Paste and submit — done<br><br>
+      All data stays on your device. There is no account, no server, no tracking. PasteDrive is open source and free to use.
+    </div>
+  </div>
+
+  <button onclick="togglePanel('flow')" style="
+    display:flex; align-items:center; gap:10px; width:100%; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; text-align:left;
+  ">
+    <svg style="width:18px;height:18px;color:var(--accent);flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span style="flex:1;">What happens when you tap a plate</span>
+    <svg id="flowChevron" style="width:16px;height:16px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="flowPanel" style="display:none; padding:12px 16px 16px; background:var(--surface); border:1px solid var(--border); border-radius:10px;"></div>
+
+  <button onclick="togglePanel('privacy')" style="
+    display:flex; align-items:center; gap:10px; width:100%; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    color:var(--text); font-family:system-ui,-apple-system,'Segoe UI',sans-serif; font-size:14px; font-weight:500;
+    cursor:pointer; text-align:left;
+  ">
+    <svg style="width:18px;height:18px;color:var(--accent);flex-shrink:0;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <span style="flex:1;">Privacy &amp; data handling</span>
+    <svg id="privacyChevron" style="width:16px;height:16px;flex-shrink:0;transition:transform 0.2s;color:var(--text-dim);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="privacyPanel" style="display:none; padding:16px 16px 18px; background:var(--surface); border:1px solid var(--border); border-radius:10px;"></div>
+
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <strong style="color:var(--text-dim);">PasteDrive</strong> — Never mistype your car plate again<br>
+  Open source. No server. No tracking. Your data stays on your device.<br>
+  <a href="https://timmolab.github.io/pastedrive" target="_blank">PasteDrive</a>
+  <br>
+  <a href="https://github.com/timmolab/PasteDrive" target="_blank">GitHub repository</a>
+</div>
+
+<button class="fab" onclick="openAddChoice()" aria-label="Add">
+  <svg fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+
+<!-- Add choice sheet -->
+<div class="sheet" id="addChoiceSheet">
+  <div class="sheet-handle"></div>
+  <h3>What would you like to add?</h3>
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <button class="btn-secondary" style="padding:18px; font-size:16px; display:flex; align-items:center; gap:12px; justify-content:flex-start;" onclick="closeSheet(); setTimeout(openAddPlate, 350);">
+      <svg style="width:22px;height:22px;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h2M13 12h4"/></svg>
+      License plate
+    </button>
+    <button class="btn-secondary" style="padding:18px; font-size:16px; display:flex; align-items:center; gap:12px; justify-content:flex-start;" onclick="closeSheet(); setTimeout(openAddLoc, 350);">
+      <svg style="width:22px;height:22px;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Parking location
+    </button>
+  </div>
+</div>
+
+<!-- Plate sheet -->
+<div class="sheet" id="plateSheet">
+  <div class="sheet-handle"></div>
+  <h3 id="plateSheetTitle">Add plate</h3>
+  <div class="field">
+    <label>Label</label>
+    <input type="text" id="plateLabel" placeholder="e.g. BMW, Work car" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Plate number</label>
+    <input type="text" id="plateNumber" placeholder="e.g. 123 ABC" autocomplete="off" style="text-transform:uppercase; font-size:20px; letter-spacing:3px;">
+  </div>
+  <div class="sheet-actions" id="plateActions"></div>
+</div>
+
+<!-- Location sheet -->
+<div class="sheet" id="locSheet">
+  <div class="sheet-handle"></div>
+  <h3 id="locSheetTitle">Add location</h3>
+  <div id="locSheetHint" style="display:none; padding:12px 14px; margin-bottom:16px; background:var(--bg); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; font-size:13px; color:var(--text-dim); line-height:1.5;">
+    You need a parking location before you can use a plate. Add one now — when you tap a plate, PasteDrive will copy it and open this site.
+  </div>
+  <div class="field">
+    <label>Label</label>
+    <input type="text" id="locLabel" placeholder="e.g. Office, City center" autocomplete="off">
+  </div>
+  <div class="field">
+    <label>Parking website URL</label>
+    <input type="url" id="locUrl" placeholder="https://parking.example.com" autocomplete="off">
+  </div>
+  <div class="sheet-actions" id="locActions"></div>
+</div>
+
+<!-- Launch overlay -->
+<div class="launch-overlay hidden" id="launchOverlay">
+  <div class="launch-content">
+    <div class="launch-plate" id="launchPlateNumber"></div>
+    <div class="launch-steps">
+      <div class="launch-step">
+        <svg class="launch-check" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        <span>Plate copied to clipboard</span>
+      </div>
+      <div class="launch-step">
+        <div class="launch-spinner"></div>
+        <span>Opening <span id="launchStep2Domain"></span><span class="launch-dots"></span></span>
+      </div>
+    </div>
+    <div class="launch-domain" id="launchDomain"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let editingPlateId = null;
+  let editingLocId = null;
+
+  // --- Data ---
+  function getPlates() { try { return JSON.parse(localStorage.getItem('pd_plates')) || []; } catch { return []; } }
+  function savePlates(plates) { localStorage.setItem('pd_plates', JSON.stringify(plates)); }
+  function getLocations() { try { return JSON.parse(localStorage.getItem('pd_locations')) || []; } catch { return []; } }
+  function saveLocations(locs) { localStorage.setItem('pd_locations', JSON.stringify(locs)); }
+  function getSelectedLocId() { return localStorage.getItem('pd_selected_loc') || ''; }
+  function setSelectedLocId(id) { localStorage.setItem('pd_selected_loc', id); }
+
+  function getSelectedUrl() {
+    const locs = getLocations();
+    const sel = locs.find(l => l.id === getSelectedLocId());
+    return sel ? sel.url : (locs.length > 0 ? locs[0].url : '');
+  }
+  function getSelectedDomain() {
+    const url = getSelectedUrl();
+    try { return url ? new URL(url).hostname : ''; } catch { return ''; }
+  }
+
+  function isAnimEnabled() { return localStorage.getItem('pd_anim') !== 'off'; }
+  function setAnimEnabled(v) { localStorage.setItem('pd_anim', v ? 'on' : 'off'); }
+
+  function getTheme() { return localStorage.getItem('pd_theme') || 'dark'; }
+  function setTheme(t) {
+    localStorage.setItem('pd_theme', t);
+    document.documentElement.dataset.theme = t === 'light' ? 'light' : '';
+    document.getElementById('metaTheme').content = t === 'light' ? '#f2f2f2' : '#0a0a0a';
+  }
+
+  function generateId() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+  function isValidUrl(url) { try { return ['http:', 'https:'].includes(new URL(url).protocol); } catch { return false; } }
+  function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+  // --- Render ---
+  function render() {
+    renderLocations();
+    renderPlates();
+    renderSettings();
+    renderInfoPanels();
+  }
+
+  function renderSettings() {
+    document.getElementById('themeToggle').classList.toggle('on', getTheme() === 'dark');
+    document.getElementById('animToggle').classList.toggle('on', isAnimEnabled());
+  }
+
+  function renderLocations() {
+    const locs = getLocations();
+    const selId = getSelectedLocId();
+    const container = document.getElementById('locationsContainer');
+
+    if (locs.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state" style="padding:30px 20px;">
+          <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </div>
+          <h2>No parking locations yet</h2>
+          <p>Add your parking website so PasteDrive knows where to open when you tap a plate.</p>
+          <button class="btn-primary" onclick="openAddLoc()">Add first location</button>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '<div class="locations-grid" id="locsGrid"></div>';
+    const grid = document.getElementById('locsGrid');
+
+    locs.forEach(l => {
+      const selected = l.id === selId || (locs.length === 1);
+      let domain = '';
+      try { domain = new URL(l.url).hostname; } catch {}
+
+      const row = document.createElement('div');
+      row.className = 'loc-row';
+
+      const card = document.createElement('div');
+      card.className = 'loc-card' + (selected ? ' selected' : '');
+      card.innerHTML = `<div class="loc-label">${esc(l.label)}</div><div class="loc-domain">${esc(domain)}</div>`;
+      card.addEventListener('click', () => { setSelectedLocId(l.id); render(); });
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'loc-edit-btn';
+      editBtn.setAttribute('aria-label', 'Edit ' + l.label);
+      editBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+      editBtn.addEventListener('click', () => openEditLoc(l.id));
+
+      row.appendChild(card);
+      row.appendChild(editBtn);
+      grid.appendChild(row);
+    });
+  }
+
+  function renderPlates() {
+    const plates = getPlates();
+    const domain = getSelectedDomain();
+    const container = document.getElementById('platesContainer');
+
+    if (plates.length === 0) {
+      const noLocs = getLocations().length === 0;
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <rect x="2" y="6" width="20" height="12" rx="3"/><path d="M7 12h2M13 12h4"/>
+            </svg>
+          </div>
+          <h2>No plates yet</h2>
+          <p>${noLocs
+            ? 'First, add a parking location above. Then add your license plates here.'
+            : 'Add your first license plate. Tap it each morning to copy &amp; open your parking page.'
+          }</p>
+          <button class="btn-primary" onclick="openAddPlate()">Add first plate</button>
+          <div style="margin-top:16px; font-size:13px; color:var(--text-muted); line-height:1.5;">
+            <svg style="width:13px;height:13px;vertical-align:-2px;margin-right:4px;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Your data is stored only on your device — never sent anywhere.
+          </div>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '<div class="plates-grid" id="platesGrid"></div>';
+    const grid = document.getElementById('platesGrid');
+    const showArrows = plates.length > 1;
+
+    plates.forEach((p, i) => {
+      const row = document.createElement('div');
+      row.className = 'plate-row';
+
+      const card = document.createElement('div');
+      card.className = 'plate-card';
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.innerHTML = `
+        <div class="label">${esc(p.label)}</div>
+        <div class="number">${esc(p.number)}</div>
+        <div class="tap-hint">tap to copy${domain ? ' &amp; open &rarr; ' + esc(domain) : ''}</div>`;
+      card.addEventListener('click', () => launchPlate(p.id));
+
+      const actions = document.createElement('div');
+      actions.className = 'plate-actions';
+
+      if (showArrows) {
+        const upBtn = document.createElement('button');
+        upBtn.className = 'plate-action-btn' + (i === 0 ? ' hidden' : '');
+        upBtn.setAttribute('aria-label', 'Move up');
+        upBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></svg>';
+        upBtn.addEventListener('click', () => movePlate(p.id, -1));
+        actions.appendChild(upBtn);
+      }
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'plate-action-btn';
+      editBtn.setAttribute('aria-label', 'Edit ' + p.label);
+      editBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>';
+      editBtn.addEventListener('click', () => openEditPlate(p.id));
+      actions.appendChild(editBtn);
+
+      if (showArrows) {
+        const downBtn = document.createElement('button');
+        downBtn.className = 'plate-action-btn' + (i === plates.length - 1 ? ' hidden' : '');
+        downBtn.setAttribute('aria-label', 'Move down');
+        downBtn.innerHTML = '<svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
+        downBtn.addEventListener('click', () => movePlate(p.id, 1));
+        actions.appendChild(downBtn);
+      }
+
+      row.appendChild(card);
+      row.appendChild(actions);
+      grid.appendChild(row);
+    });
+  }
+
+  function movePlate(id, dir) {
+    const plates = getPlates();
+    const idx = plates.findIndex(p => p.id === id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= plates.length) return;
+    [plates[idx], plates[newIdx]] = [plates[newIdx], plates[idx]];
+    savePlates(plates); render();
+  }
+
+  // --- Launch ---
+  async function launchPlate(id) {
+    const plate = getPlates().find(p => p.id === id);
+    if (!plate) return;
+    const url = getSelectedUrl();
+    if (!url) { openAddLoc(true); return; }
+
+    let copied = false;
+    try { await navigator.clipboard.writeText(plate.number); copied = true; } catch {
+      try {
+        const ta = document.createElement('textarea'); ta.value = plate.number;
+        ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta);
+        ta.select(); copied = document.execCommand('copy'); document.body.removeChild(ta);
+      } catch {}
+    }
+
+    if (!copied) { showToast('Could not copy — long-press the plate to copy manually', true); return; }
+
+    if (isAnimEnabled()) {
+      const domain = getSelectedDomain();
+      const overlay = document.getElementById('launchOverlay');
+      document.getElementById('launchPlateNumber').textContent = plate.number;
+      document.getElementById('launchDomain').textContent = domain;
+      document.getElementById('launchStep2Domain').textContent = domain;
+      overlay.classList.remove('hidden');
+      setTimeout(() => {
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noreferrer'; a.click();
+        setTimeout(() => overlay.classList.add('hidden'), 800);
+      }, 1200);
+    } else {
+      showToast('Copied ' + plate.number);
+      setTimeout(() => {
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noreferrer'; a.click();
+      }, 300);
+    }
+  }
+
+  // --- Sheets ---
+  function openSheet(id) { document.getElementById('overlay').classList.add('open'); document.getElementById(id).classList.add('open'); }
+  function closeSheet() {
+    document.getElementById('overlay').classList.remove('open');
+    document.querySelectorAll('.sheet').forEach(s => s.classList.remove('open'));
+    editingPlateId = null; editingLocId = null;
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  document.querySelectorAll('.sheet').forEach(sheet => {
+    let startY = 0;
+    sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
+    sheet.addEventListener('touchend', e => { if (e.changedTouches[0].clientY - startY > 80) closeSheet(); });
+  });
+
+  // --- Plate CRUD ---
+  function openAddChoice() { openSheet('addChoiceSheet'); }
+
+  function openAddPlate() {
+    editingPlateId = null;
+    document.getElementById('plateSheetTitle').textContent = 'Add plate';
+    document.getElementById('plateLabel').value = '';
+    document.getElementById('plateNumber').value = '';
+    document.getElementById('plateActions').innerHTML = `
+      <button class="btn-secondary" onclick="closeSheet()">Cancel</button>
+      <button class="btn-primary" onclick="handleSavePlate()">Add</button>`;
+    openSheet('plateSheet');
+    setTimeout(() => document.getElementById('plateLabel').focus(), 350);
+  }
+
+  function openEditPlate(id) {
+    const plate = getPlates().find(p => p.id === id);
+    if (!plate) return;
+    editingPlateId = id;
+    document.getElementById('plateSheetTitle').textContent = 'Edit plate';
+    document.getElementById('plateLabel').value = plate.label;
+    document.getElementById('plateNumber').value = plate.number;
+    document.getElementById('plateActions').innerHTML = `
+      <button class="btn-danger" id="deletePlateBtn" onclick="confirmDeletePlate()">Delete</button>
+      <button class="btn-primary" onclick="handleSavePlate()">Save</button>`;
+    openSheet('plateSheet');
+  }
+
+  function handleSavePlate() {
+    const label = document.getElementById('plateLabel').value.trim();
+    const number = document.getElementById('plateNumber').value.trim().toUpperCase();
+    if (!label || !number) { showToast('Fill in both fields', true); return; }
+    const plates = getPlates();
+    if (editingPlateId) {
+      const idx = plates.findIndex(p => p.id === editingPlateId);
+      if (idx >= 0) { plates[idx].label = label; plates[idx].number = number; }
+    } else {
+      plates.push({ id: generateId(), label, number });
+    }
+    savePlates(plates); closeSheet(); render();
+  }
+
+  function confirmDeletePlate() {
+    const btn = document.getElementById('deletePlateBtn');
+    if (btn.dataset.confirmed) { deletePlate(); return; }
+    btn.textContent = 'Tap again to confirm'; btn.dataset.confirmed = 'true';
+    setTimeout(() => { if (btn) { btn.textContent = 'Delete'; delete btn.dataset.confirmed; } }, 3000);
+  }
+
+  function deletePlate() {
+    if (!editingPlateId) return;
+    savePlates(getPlates().filter(p => p.id !== editingPlateId)); closeSheet(); render();
+  }
+
+  // --- Location CRUD ---
+  function openAddLoc(showHint = false) {
+    editingLocId = null;
+    document.getElementById('locSheetTitle').textContent = 'Add location';
+    document.getElementById('locSheetHint').style.display = showHint ? 'block' : 'none';
+    document.getElementById('locLabel').value = '';
+    document.getElementById('locUrl').value = '';
+    document.getElementById('locActions').innerHTML = `
+      <button class="btn-secondary" onclick="closeSheet()">Cancel</button>
+      <button class="btn-primary" onclick="handleSaveLoc()">Add</button>`;
+    openSheet('locSheet');
+    setTimeout(() => document.getElementById('locLabel').focus(), 350);
+  }
+
+  function openEditLoc(id) {
+    const loc = getLocations().find(l => l.id === id);
+    if (!loc) return;
+    editingLocId = id;
+    document.getElementById('locSheetTitle').textContent = 'Edit location';
+    document.getElementById('locSheetHint').style.display = 'none';
+    document.getElementById('locLabel').value = loc.label;
+    document.getElementById('locUrl').value = loc.url;
+    document.getElementById('locActions').innerHTML = `
+      <button class="btn-danger" id="deleteLocBtn" onclick="confirmDeleteLoc()">Delete</button>
+      <button class="btn-primary" onclick="handleSaveLoc()">Save</button>`;
+    openSheet('locSheet');
+  }
+
+  function handleSaveLoc() {
+    const label = document.getElementById('locLabel').value.trim();
+    const url = document.getElementById('locUrl').value.trim();
+    if (!label || !url) { showToast('Fill in both fields', true); return; }
+    if (!isValidUrl(url)) { showToast('URL must start with https://', true); return; }
+    const locs = getLocations();
+    if (editingLocId) {
+      const idx = locs.findIndex(l => l.id === editingLocId);
+      if (idx >= 0) { locs[idx].label = label; locs[idx].url = url; }
+    } else {
+      const newId = generateId();
+      locs.push({ id: newId, label, url });
+      if (locs.length === 1) setSelectedLocId(newId);
+    }
+    saveLocations(locs); closeSheet(); render();
+  }
+
+  function confirmDeleteLoc() {
+    const btn = document.getElementById('deleteLocBtn');
+    if (btn.dataset.confirmed) { deleteLoc(); return; }
+    btn.textContent = 'Tap again to confirm'; btn.dataset.confirmed = 'true';
+    setTimeout(() => { if (btn) { btn.textContent = 'Delete'; delete btn.dataset.confirmed; } }, 3000);
+  }
+
+  function deleteLoc() {
+    if (!editingLocId) return;
+    const locs = getLocations().filter(l => l.id !== editingLocId);
+    saveLocations(locs);
+    if (getSelectedLocId() === editingLocId && locs.length > 0) setSelectedLocId(locs[0].id);
+    if (locs.length === 0) localStorage.removeItem('pd_selected_loc');
+    closeSheet(); render();
+  }
+
+  // --- Theme & Anim ---
+  function confirmErase(type) {
+    const btnId = type === 'locs' ? 'eraseLocsBtn' : type === 'plates' ? 'erasePlatesBtn' : 'eraseAllBtn';
+    const btn = document.getElementById(btnId);
+    if (btn.dataset.confirmed) { doErase(type); return; }
+    btn.dataset.origText = btn.textContent;
+    btn.textContent = 'Tap again to confirm';
+    btn.dataset.confirmed = 'true';
+    setTimeout(() => { if (btn) { btn.textContent = btn.dataset.origText; delete btn.dataset.confirmed; } }, 3000);
+  }
+
+  function doErase(type) {
+    if (type === 'locs' || type === 'all') {
+      saveLocations([]); localStorage.removeItem('pd_selected_loc');
+    }
+    if (type === 'plates' || type === 'all') {
+      savePlates([]);
+    }
+    if (type === 'all') {
+      localStorage.removeItem('pd_anim');
+      localStorage.removeItem('pd_theme');
+      setTheme('dark');
+    }
+    render();
+    const msg = type === 'locs' ? 'All locations erased' : type === 'plates' ? 'All plates erased' : 'All data erased';
+    showToast(msg);
+  }
+
+  function toggleTheme() {
+    const next = getTheme() === 'dark' ? 'light' : 'dark';
+    setTheme(next); renderSettings();
+  }
+
+  function toggleAnim() {
+    setAnimEnabled(!isAnimEnabled()); renderSettings();
+  }
+
+  // --- Export / Import ---
+  function exportConfig() {
+    const data = JSON.stringify({
+      _app: 'PasteDrive', _exported: new Date().toISOString(),
+      locations: getLocations(), selectedLocId: getSelectedLocId(),
+      plates: getPlates(), anim: isAnimEnabled(), theme: getTheme()
+    }, null, 2);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+    a.download = 'pastedrive-config.json'; a.click(); URL.revokeObjectURL(a.href);
+    showToast('Config exported');
+  }
+
+  function importConfig(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data._app !== 'PasteDrive') { showToast('Not a PasteDrive config file', true); return; }
+
+        if (Array.isArray(data.locations)) {
+          const locs = data.locations
+            .filter(l => l && typeof l.label === 'string' && typeof l.url === 'string' && isValidUrl(l.url))
+            .slice(0, 20).map(l => ({ id: generateId(), label: l.label.trim(), url: l.url.trim() }));
+          saveLocations(locs);
+          if (locs.length > 0) setSelectedLocId(locs[0].id);
+        }
+        if (!data.locations && data.url && isValidUrl(data.url)) {
+          const id = generateId();
+          saveLocations([{ id, label: 'Parking', url: data.url }]);
+          setSelectedLocId(id);
+        }
+        if (Array.isArray(data.plates)) {
+          const sanitized = data.plates
+            .filter(p => p && typeof p.label === 'string' && typeof p.number === 'string' && p.label.length <= 100 && p.number.length <= 20)
+            .slice(0, 50).map(p => ({ id: generateId(), label: p.label.trim(), number: p.number.trim().toUpperCase() }));
+          savePlates(sanitized);
+        }
+        if (typeof data.anim === 'boolean') setAnimEnabled(data.anim);
+        if (data.theme === 'light' || data.theme === 'dark') setTheme(data.theme);
+
+        render();
+        showToast('Config imported');
+      } catch { showToast('Invalid config file', true); }
+    };
+    reader.readAsText(file); event.target.value = '';
+  }
+
+  // --- Info panels ---
+  const panelState = { about: false, flow: false, privacy: false, backup: false };
+  function togglePanel(name) {
+    panelState[name] = !panelState[name];
+    document.getElementById(name + 'Panel').style.display = panelState[name] ? 'block' : 'none';
+    document.getElementById(name + 'Chevron').style.transform = panelState[name] ? 'rotate(180deg)' : '';
+  }
+
+  function renderInfoPanels() { renderFlowPanel(); renderPrivacyPanel(); }
+
+  function renderFlowPanel() {
+    const el = document.getElementById('flowPanel');
+    const domain = getSelectedDomain();
+    if (!domain) { el.innerHTML = '<div style="font-size:15px; color:var(--text-dim); line-height:1.8;">Add a parking location first.</div>'; return; }
+    el.innerHTML = `
+      <div style="font-size:15px; color:var(--text-dim); line-height:2;">
+        <div style="display:flex; gap:12px; margin-bottom:4px;"><span style="color:var(--accent); font-weight:700; min-width:24px;">1.</span><span style="color:var(--text);">Select a parking location (if you have several)</span></div>
+        <div style="display:flex; gap:12px; margin-bottom:4px;"><span style="color:var(--accent); font-weight:700; min-width:24px;">2.</span><span style="color:var(--text);">Tap a plate card</span></div>
+        <div style="display:flex; gap:12px; margin-bottom:4px;"><span style="color:var(--accent); font-weight:700; min-width:24px;">3.</span><span>Plate number is <strong style="color:var(--text)">copied to your clipboard</strong></span></div>
+        <div style="display:flex; gap:12px; margin-bottom:4px;"><span style="color:var(--accent); font-weight:700; min-width:24px;">4.</span><span><strong style="color:var(--text)">${esc(domain)}</strong> opens in a new tab</span></div>
+        <div style="display:flex; gap:12px;"><span style="color:var(--accent); font-weight:700; min-width:24px;">5.</span><span>You <strong style="color:var(--text)">paste</strong> the plate number and <strong style="color:var(--text)">submit</strong> on the parking site yourself</span></div>
+      </div>
+      <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border); font-size:14px; color:var(--text-dim); line-height:1.7;">
+        <strong style="color:var(--text);">PasteDrive does NOT paste, fill, or submit any form.</strong> It only opens your configured URL and copies your selected plate number to the clipboard. You paste and submit manually — you are fully in control.
+      </div>`;
+  }
+
+  function renderPrivacyPanel() {
+    document.getElementById('privacyPanel').innerHTML = `
+      <div style="font-size:14px; color:var(--text-dim); line-height:1.8;">
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Your data is not stored on any server or cloud</strong><br>
+          All your data — plate numbers, parking URLs, preferences — is saved only in your browser's <strong style="color:var(--text)">localStorage on your device</strong>. PasteDrive does not send, upload, or store your data anywhere else. Nothing leaves your device unless you manually export a backup file.<br><br>
+          <span style="color:var(--text-muted); font-size:13px;">Note: license plate numbers are considered personal data under GDPR, as they can be linked to a vehicle owner. Since PasteDrive processes this data entirely on your device, you remain the sole controller of your data.</span>
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Data controller</strong><br>
+          Since all data is stored locally on your device and PasteDrive has no server-side processing, you are effectively the sole controller of your data. The app authors do not have access to any of your data.
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">What PasteDrive does NOT do</strong><br>
+          &#x2022; Does not send data to any server<br>
+          &#x2022; Does not use analytics or tracking<br>
+          &#x2022; Does not set or read cookies<br>
+          &#x2022; Does not collect usage data, timestamps, or history<br>
+          &#x2022; Does not interact with the parking website on your behalf
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Hosting (GitHub Pages)</strong><br>
+          This app is hosted on GitHub Pages. While PasteDrive itself does not collect any data, GitHub may collect standard server access logs (IP address, browser type, pages requested) as part of operating their hosting service. This is standard for any website. PasteDrive has no control over this. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" style="color:var(--accent);">GitHub's Privacy Statement</a> for details.
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Third-party parking websites</strong><br>
+          When you tap a plate, PasteDrive opens a parking website URL that you configured. That website has its own privacy policy and data handling practices. PasteDrive does not control what those websites do with your data. Always review the parking website's privacy terms.
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Your rights</strong><br>
+          Since your data is stored only on your device, you have full control at all times:<br>
+          &#x2022; <strong style="color:var(--text)">View</strong> — your plates and locations are visible on the main screen<br>
+          &#x2022; <strong style="color:var(--text)">Edit / Delete</strong> — tap the edit button on any plate or location<br>
+          &#x2022; <strong style="color:var(--text)">Export</strong> — download all your data as a JSON file<br>
+          &#x2022; <strong style="color:var(--text)">Erase all data</strong> — clear your browser's site data for this page, or use your browser's "Clear browsing data" option
+        </div>
+
+        <div style="margin-bottom:18px;">
+          <strong style="color:var(--text); font-size:15px;">Data persistence</strong><br>
+          &#x2022; Your data persists in your browser's localStorage until you clear it<br>
+          &#x2022; Incognito / private mode: data deleted when window closes<br>
+          &#x2022; Clearing browser data will erase all stored plates and settings<br>
+          &#x2022; Use <strong style="color:var(--text)">Export</strong> (in Settings) to keep a backup
+        </div>
+
+        <div>
+          <strong style="color:var(--text); font-size:15px;">Source code</strong><br>
+          PasteDrive is fully open source. All code is readable and inspectable — no minification, no obfuscation, no hidden logic. See the <a href="https://github.com/timmolab/PasteDrive" target="_blank" style="color:var(--accent);">GitHub repository</a>.
+        </div>
+
+      </div>`;
+  }
+
+  function showToast(msg, isError = false) {
+    const t = document.getElementById('toast'); t.textContent = msg;
+    t.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(t._timer); t._timer = setTimeout(() => t.className = 'toast', 2500);
+  }
+
+  // --- Migrate old format ---
+  (function() {
+    const oldUrl = localStorage.getItem('pd_url');
+    if (oldUrl && getLocations().length === 0) {
+      const id = generateId();
+      saveLocations([{ id, label: 'Parking', url: oldUrl }]);
+      setSelectedLocId(id);
+      localStorage.removeItem('pd_url');
+    }
+  })();
+
+  // --- Init ---
+  setTheme(getTheme());
+  if (navigator.storage && navigator.storage.persist) { navigator.storage.persist(); }
+  if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').catch(() => {}); }
+  render();
+</script>
+</body>
+</html>

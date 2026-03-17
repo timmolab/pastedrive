@@ -1,0 +1,17 @@
+{
+  "name": "PasteDrive",
+  "short_name": "PasteDrive",
+  "description": "Never mistype your car plate again. Tap a saved plate to copy it and open your parking website — just paste and submit.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
