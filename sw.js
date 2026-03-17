@@ -1,4 +1,4 @@
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = `pastedrive-${VERSION}`;
 const ASSETS = ['./', 'manifest.json', 'icon.svg', 'qr.png'];
 
