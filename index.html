@@ -284,6 +284,41 @@
   }
   .footer a { color: var(--text-dim); text-decoration: none; }
   .footer a:hover { color: var(--accent); }
+  .footer-toggle {
+    background: none; border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text-muted); font-size: 12px; padding: 6px 14px; cursor: pointer;
+    margin-bottom: 12px; transition: all 0.15s;
+    font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+  }
+  .footer-toggle:hover { color: var(--text-dim); border-color: var(--text-muted); }
+  .qr-overlay {
+    position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .qr-overlay.open { opacity: 1; pointer-events: all; }
+  .qr-overlay-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 32px; text-align: center; max-width: 300px; width: 90%;
+    transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .qr-overlay.open .qr-overlay-card { transform: scale(1); }
+  .qr-overlay-card h3 { font-size: 17px; font-weight: 500; margin-bottom: 4px; }
+  .qr-overlay-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+  .qr-overlay-card .qr-img-wrap {
+    display: inline-block; padding: 14px; background: #fff; border-radius: 14px; margin-bottom: 20px;
+  }
+  .qr-overlay-card .qr-img-wrap img { width: 180px; height: 180px; display: block; }
+  .qr-overlay-card .qr-url {
+    font-size: 11px; color: var(--text-dim); font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', monospace;
+    margin-bottom: 20px; word-break: break-all;
+  }
+  .qr-overlay-card .qr-close {
+    background: var(--surface-raised); border: 1px solid var(--border); border-radius: 10px;
+    color: var(--text); padding: 12px 32px; font-size: 14px; cursor: pointer; transition: all 0.15s;
+  }
+  .qr-overlay-card .qr-close:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
@@ -304,21 +339,8 @@
   <div class="section-label" style="margin-top:20px;">Your plates</div>
   <div id="platesContainer"></div>
 
-  <!-- Disclaimer (right after plates) -->
-  <div style="margin-top:16px; padding:18px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius);">
-    <div style="display:flex; align-items:flex-start; gap:14px;">
-      <svg style="width:28px;height:28px;flex-shrink:0;margin-top:1px;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-      <div style="font-size:14px; color:var(--text-dim); line-height:1.8;">
-        <strong style="color:var(--text); font-size:16px;">Disclaimer</strong><br>
-        PasteDrive is a personal convenience tool. It copies your plate number and opens a URL — it does <strong style="color:var(--text);">not</strong> register or confirm parking on your behalf.
-        <strong style="color:var(--text);">Always verify that your parking is successfully registered on the parking website.</strong>
-        PasteDrive is provided as-is with no warranty. The authors are not responsible for parking fines, failed registrations, or any other consequences of using this tool.
-      </div>
-    </div>
-  </div>
-
   <!-- Settings -->
-  <div class="section-label" style="margin-top:28px;">Settings</div>
+  <div class="section-label" style="margin-top:128px;">Settings</div>
 
   <div class="settings-card">
     <div class="toggle-row">
@@ -385,7 +407,7 @@
       &#x2022; Save your parking website URLs<br>
       &#x2022; Tap a plate to copy it and open the parking site in one step<br>
       &#x2022; Paste and submit — done<br><br>
-      All data stays on your device. There is no account, no server, no tracking. PasteDrive is open source and free to use.
+      All data stays on your device. There is no account, no tracking. PasteDrive is open source and free to use.
     </div>
   </div>
 
@@ -415,13 +437,39 @@
 
 </div>
 
+<!-- Disclaimer -->
+<div style="margin:16px 20px 0; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;">
+  <button id="disclaimerToggle" onclick="toggleDisclaimer()" style="display:flex; align-items:center; gap:12px; width:100%; padding:16px 18px; background:none; border:none; cursor:pointer; color:var(--text);">
+    <svg style="width:22px;height:22px;flex-shrink:0;color:var(--accent);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <span style="flex:1; font-size:15px; font-weight:500; text-align:left; font-family:system-ui,-apple-system,'Segoe UI',sans-serif;">Disclaimer</span>
+    <svg id="disclaimerChevron" style="width:16px;height:16px;flex-shrink:0;transition:transform 0.3s;color:var(--text-dim);" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </button>
+  <div id="disclaimerBody" style="padding:0 18px 18px; font-size:14px; color:var(--text-dim); line-height:1.8;">
+    PasteDrive is a personal convenience tool. It copies your plate number and opens a URL — it does <strong style="color:var(--text);">not</strong> register or confirm parking on your behalf.
+    <strong style="color:var(--text);">Always verify that your parking is successfully registered on the parking website.</strong>
+    PasteDrive is provided as-is with no warranty. The authors are not responsible for parking fines, failed registrations, or any other consequences of using this tool.
+  </div>
+</div>
+
 <!-- Footer -->
 <div class="footer">
   <strong style="color:var(--text-dim);">PasteDrive</strong> — Never mistype your car plate again<br>
-  Open source. No server. No tracking. Your data stays on your device.<br>
-  <a href="https://timmolab.github.io/pastedrive" target="_blank">PasteDrive</a>
-  <br>
-  <a href="https://github.com/timmolab/pasteDrive" target="_blank">GitHub repository</a>
+  Open source, MIT License<br>
+  <a href="https://timmolab.github.io/pastedrive" target="_blank">PasteDrive</a> ·
+  <a href="https://github.com/timmolab/pastedrive" target="_blank">GitHub</a>
+  <br><br>
+  <button class="footer-toggle" onclick="openQrOverlay()" style="border-color:var(--accent); color:var(--accent-dim);">Show QR code to this page</button>
+</div>
+
+<!-- QR Overlay -->
+<div class="qr-overlay" id="qrOverlay" onclick="closeQrOverlay()">
+  <div class="qr-overlay-card" onclick="event.stopPropagation()">
+    <h3>Share PasteDrive</h3>
+    <p>Scan to open this page on another device</p>
+    <div class="qr-img-wrap"><img src="qr.png" alt="QR code to PasteDrive"></div>
+    <div class="qr-url">timmolab.github.io/pastedrive</div>
+    <button class="qr-close" onclick="closeQrOverlay()">Close</button>
+  </div>
 </div>
 
 <button class="fab" onclick="openAddChoice()" aria-label="Add">
@@ -730,7 +778,7 @@
     editingPlateId = null; editingLocId = null;
   }
 
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSheet(); closeQrOverlay(); } });
   document.querySelectorAll('.sheet').forEach(sheet => {
     let startY = 0;
     sheet.addEventListener('touchstart', e => { startY = e.touches[0].clientY; }, { passive: true });
@@ -1030,14 +1078,23 @@
     clearTimeout(t._timer); t._timer = setTimeout(() => t.className = 'toast', 2500);
   }
 
-  // --- Migrate old format ---
-  (function() {
-    const oldUrl = localStorage.getItem('pd_url');
-    if (oldUrl && getLocations().length === 0) {
-      const id = generateId();
-      saveLocations([{ id, label: 'Parking', url: oldUrl }]);
-      setSelectedLocId(id);
-      localStorage.removeItem('pd_url');
+  // --- QR Overlay ---
+  function openQrOverlay() { document.getElementById('qrOverlay').classList.add('open'); }
+  function closeQrOverlay() { document.getElementById('qrOverlay').classList.remove('open'); }
+
+  // --- Collapsible Disclaimer ---
+  function toggleDisclaimer() {
+    const body = document.getElementById('disclaimerBody');
+    const chevron = document.getElementById('disclaimerChevron');
+    const isVisible = body.style.display !== 'none';
+    body.style.display = isVisible ? 'none' : 'block';
+    chevron.style.transform = isVisible ? 'rotate(-90deg)' : '';
+    localStorage.setItem('pd_disclaimer_collapsed', isVisible ? '1' : '0');
+  }
+  (function initDisclaimer() {
+    if (localStorage.getItem('pd_disclaimer_collapsed') === '1') {
+      document.getElementById('disclaimerBody').style.display = 'none';
+      document.getElementById('disclaimerChevron').style.transform = 'rotate(-90deg)';
     }
   })();
 

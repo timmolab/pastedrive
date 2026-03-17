@@ -1,6 +1,6 @@
 const VERSION = 'v1';
 const CACHE = `pastedrive-${VERSION}`;
-const ASSETS = ['./', 'manifest.json', 'icon.svg'];
+const ASSETS = ['./', 'manifest.json', 'icon.svg', 'qr.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
