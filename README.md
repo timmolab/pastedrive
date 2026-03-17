@@ -68,5 +68,5 @@ Never mistype your car plate again. Tap a saved plate to copy it and open your p
 
 ## License
 
-MIT
+[MIT License](https://github.com/timmolab/PasteDrive?tab=MIT-1-ov-file#MIT-1-ov-file)
 
