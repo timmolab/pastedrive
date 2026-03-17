@@ -1,6 +1,6 @@
 # PasteDrive
 
-Never mistype your plate again. Tap a plate to copy it and open your parking website — just paste and submit.
+Never mistype your car plate again. Tap a saved plate to copy it and open your parking website — just paste and submit.
 
 ## Features
 
