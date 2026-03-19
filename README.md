@@ -2,6 +2,8 @@
 
 Never mistype your car plate again. Tap a saved plate to copy it and open your parking website — just paste and submit.
 
+🚀 **Live App:** [https://timmolab.github.io/pastedrive](https://timmolab.github.io/pastedrive)
+
 ## Features
 
 - **One-tap workflow** -- tap a plate card to copy the number and open your parking page
