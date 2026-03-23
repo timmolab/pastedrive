@@ -4,6 +4,11 @@ Never mistype your car plate again. Tap a saved plate to copy it and open your p
 
 🚀 **Live App:** [https://timmolab.github.io/pastedrive](https://timmolab.github.io/pastedrive)
 
+<p align="left">
+  <img src="images/example_ui_1.png" width="40%">
+  <img src="images/example_ui_2.png" width="40%">
+</p>
+
 ## Features
 
 - **One-tap workflow** -- tap a plate card to copy the number and open your parking page
@@ -28,6 +33,7 @@ Never mistype your car plate again. Tap a saved plate to copy it and open your p
 | `sw.js` | Service worker (caches the page for offline use) |
 | `manifest.json` | PWA config (app name, icon, display mode) |
 | `icon.svg` | App icon |
+| `qr.png` | App url in QR code |
 
 ## How to Use
 
