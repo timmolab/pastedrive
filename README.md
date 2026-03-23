@@ -1,13 +1,18 @@
 # PasteDrive
 
-Never mistype your car plate again. Tap a saved plate to copy it and open your parking website — just paste and submit.
+Never mistype your car plate again. 
+1) Tap a car plate (saved on your device) — it’s copied automatically to your clipboard
+2) The predefined parking website opens automatically
+3) Paste the plate and submit manually
 
 🚀 **Live App:** [https://timmolab.github.io/pastedrive](https://timmolab.github.io/pastedrive)
 
+<br>
 <p align="left">
   <img src="images/example_ui_1.png" width="40%">
   <img src="images/example_ui_2.png" width="40%">
 </p>
+<br>
 
 ## Features
 
